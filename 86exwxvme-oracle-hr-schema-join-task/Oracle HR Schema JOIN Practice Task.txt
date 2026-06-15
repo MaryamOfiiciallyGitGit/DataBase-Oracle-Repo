@@ -1,0 +1,128 @@
+
+-- Database exploration
+
+DESCRIBE EMPLOYEES;
+DESCRIBE DEPARTMENTS;
+DESCRIBE JOBS;
+DESCRIBE LOCATIONS;
+DESCRIBE COUNTRIES;
+DESCRIBE REGIONS;
+
+
+
+--Employee + Department reports
+
+--Employee ID, name, department
+SELECT employee_id, first_name || ' ' || last_name AS emp_name, department_name
+FROM employees
+JOIN departments USING (department_id);
+
+--Employee name, job title, salary
+SELECT first_name || ' ' || last_name AS emp_name, job_title, salary
+FROM employees
+JOIN jobs USING (job_id);
+
+--Employee, department, city
+SELECT first_name || ' ' || last_name AS emp_name, department_name, city
+FROM employees
+JOIN departments USING (department_id)
+JOIN locations USING (location_id);
+
+--Employee, department, country, region
+SELECT first_name || ' ' || last_name AS emp_name, department_name, country_name, region_name
+FROM employees
+JOIN departments USING (department_id)
+JOIN locations USING (location_id)
+JOIN countries USING (country_id)
+JOIN regions USING (region_id);
+
+
+
+--Organization structure
+
+-- All employees, even without department
+SELECT first_name || ' ' || last_name AS emp_name, department_name
+FROM employees
+LEFT JOIN departments USING (department_id);
+
+-- All departments, even without employees
+SELECT department_name, first_name || ' ' || last_name AS emp_name
+FROM departments
+LEFT JOIN employees USING (department_id);
+
+-- Departments with no employees
+SELECT department_name
+FROM departments
+LEFT JOIN employees USING (department_id)
+WHERE employee_id IS NULL;
+
+
+
+-- Management hierarchy
+
+-- Employee and manager name
+SELECT e.first_name || ' ' || e.last_name AS emp_name,
+       m.first_name || ' ' || m.last_name AS manager_name
+FROM employees e
+LEFT JOIN employees m ON e.manager_id = m.employee_id;
+
+-- Employees without managers (top of hierarchy, e.g. President)
+SELECT first_name || ' ' || last_name AS emp_name, job_title
+FROM employees
+JOIN jobs USING (job_id)
+WHERE manager_id IS NULL;
+
+
+-- Advanced analysis
+
+-- Employees earning more than their manager
+SELECT e.first_name || ' ' || e.last_name AS emp_name, e.salary,
+       m.first_name || ' ' || m.last_name AS manager_name, m.salary AS manager_salary
+FROM employees e
+JOIN employees m ON e.manager_id = m.employee_id
+WHERE e.salary > m.salary;
+
+-- Departments whose manager works in the same department
+SELECT d.department_name, e.first_name || ' ' || e.last_name AS manager_name
+FROM departments d
+JOIN employees e ON d.manager_id = e.employee_id
+WHERE d.department_id = e.department_id;
+
+
+
+
+-- Executive dashboard
+
+-- Employee, job, department, city, country
+SELECT e.first_name || ' ' || e.last_name AS emp_name, j.job_title, d.department_name, l.city, c.country_name
+FROM employees e
+JOIN jobs j USING (job_id)
+JOIN departments d ON e.department_id = d.department_id
+JOIN locations l ON d.location_id = l.location_id
+JOIN countries c ON l.country_id = c.country_id;
+
+-- Department, manager, city, country (with or without manager)
+SELECT d.department_name, m.first_name || ' ' || m.last_name AS manager_name, l.city, c.country_name
+FROM departments d
+LEFT JOIN employees m ON d.manager_id = m.employee_id
+JOIN locations l ON d.location_id = l.location_id
+JOIN countries c ON l.country_id = c.country_id;
+
+-- Employees in same department as their manager
+SELECT e.first_name || ' ' || e.last_name AS emp_name, e.department_id
+FROM employees e
+JOIN employees m ON e.manager_id = m.employee_id
+WHERE e.department_id = m.department_id;
+
+-- Employees whose manager works in a different department
+SELECT e.first_name || ' ' || e.last_name AS emp_name, e.department_id, m.department_id AS manager_dept
+FROM employees e
+JOIN employees m ON e.manager_id = m.employee_id
+WHERE e.department_id <> m.department_id;
+
+-- Countries with company departments
+SELECT DISTINCT country_name, region_name
+FROM departments
+JOIN locations USING (location_id)
+JOIN countries USING (country_id)
+JOIN regions USING (region_id);
